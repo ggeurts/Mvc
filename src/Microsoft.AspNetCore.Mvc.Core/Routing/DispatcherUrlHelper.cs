@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 
@@ -15,16 +16,26 @@ namespace Microsoft.AspNetCore.Mvc.Routing
     {
         private readonly ILogger<DispatcherUrlHelper> _logger;
         private readonly ILinkGenerator _linkGenerator;
+        private readonly IEndpointFinder<RouteValuesContext> _routeValuesBasedEndpointFinder;
+        private readonly IEndpointFinder<string> _nameBasedEndpointFinder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DispatcherUrlHelper"/> class using the specified
         /// <paramref name="actionContext"/>.
         /// </summary>
         /// <param name="actionContext">The <see cref="Mvc.ActionContext"/> for the current request.</param>
+        /// <param name="routeValuesBasedEndpointFinder">
+        /// The <see cref="IEndpointFinder{T}"/> which finds endpoints by required route values.
+        /// </param>
+        /// <param name="nameBasedEndpointFinder">
+        /// The <see cref="IEndpointFinder{T}"/> which finds endpoints by name.
+        /// </param>
         /// <param name="linkGenerator">The <see cref="ILinkGenerator"/> used to generate the link.</param>
         /// <param name="logger">The <see cref="ILogger"/>.</param>
         public DispatcherUrlHelper(
             ActionContext actionContext,
+            IEndpointFinder<RouteValuesContext> routeValuesBasedEndpointFinder,
+            IEndpointFinder<string> nameBasedEndpointFinder,
             ILinkGenerator linkGenerator,
             ILogger<DispatcherUrlHelper> logger)
             : base(actionContext)
@@ -40,6 +51,8 @@ namespace Microsoft.AspNetCore.Mvc.Routing
             }
 
             _linkGenerator = linkGenerator;
+            _routeValuesBasedEndpointFinder = routeValuesBasedEndpointFinder;
+            _nameBasedEndpointFinder = nameBasedEndpointFinder;
             _logger = logger;
         }
 
@@ -79,12 +92,16 @@ namespace Microsoft.AspNetCore.Mvc.Routing
                 valuesDictionary["controller"] = urlActionContext.Controller;
             }
 
+            var endpoints = _routeValuesBasedEndpointFinder.FindEndpoints(new RouteValuesContext()
+            {
+                ExplicitValues = valuesDictionary,
+                AmbientValues = AmbientValues
+            });
+
             var successfullyGeneratedLink = _linkGenerator.TryGetLink(
-                new LinkGeneratorContext()
-                {
-                    SuppliedValues = valuesDictionary,
-                    AmbientValues = AmbientValues
-                },
+                endpoints,
+                valuesDictionary,
+                AmbientValues,
                 out var link);
 
             if (!successfullyGeneratedLink)
@@ -107,13 +124,24 @@ namespace Microsoft.AspNetCore.Mvc.Routing
 
             var valuesDictionary = routeContext.Values as RouteValueDictionary ?? GetValuesDictionary(routeContext.Values);
 
-            var successfullyGeneratedLink = _linkGenerator.TryGetLink(
-                new LinkGeneratorContext()
+            IEnumerable<Endpoint> endpoints;
+            if (string.IsNullOrEmpty(routeContext.RouteName))
+            {
+                endpoints = _routeValuesBasedEndpointFinder.FindEndpoints(new RouteValuesContext()
                 {
-                    Address = new Address(routeContext.RouteName),
-                    SuppliedValues = valuesDictionary,
+                    ExplicitValues = valuesDictionary,
                     AmbientValues = AmbientValues
-                },
+                });
+            }
+            else
+            {
+                endpoints = _nameBasedEndpointFinder.FindEndpoints(routeContext.RouteName);
+            }
+
+            var successfullyGeneratedLink = _linkGenerator.TryGetLink(
+                endpoints,
+                valuesDictionary,
+                AmbientValues,
                 out var link);
 
             if (!successfullyGeneratedLink)

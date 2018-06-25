@@ -100,7 +100,7 @@ namespace Microsoft.AspNetCore.Mvc.Internal
                                 {
                                     var subTemplate = RouteTemplateWriter.ToString(newEndpointTemplate.Segments.Take(i));
 
-                                    var subEndpoint = CreateEndpoint(action, subTemplate, 0, endpointInfo);
+                                    var subEndpoint = CreateEndpoint(action, endpointInfo.Name, subTemplate, 0, endpointInfo);
                                     _endpoints.Add(subEndpoint);
                                 }
 
@@ -119,14 +119,14 @@ namespace Microsoft.AspNetCore.Mvc.Internal
 
                             var newTemplate = RouteTemplateWriter.ToString(newEndpointTemplate.Segments);
 
-                            var endpoint = CreateEndpoint(action, newTemplate, 0, endpointInfo);
+                            var endpoint = CreateEndpoint(action, null, newTemplate, 0, endpointInfo);
                             _endpoints.Add(endpoint);
                         }
                     }
                 }
                 else
                 {
-                    var endpoint = CreateEndpoint(action, action.AttributeRouteInfo.Template, action.AttributeRouteInfo.Order, action.AttributeRouteInfo);
+                    var endpoint = CreateEndpoint(action, action.AttributeRouteInfo.Name, action.AttributeRouteInfo.Template, action.AttributeRouteInfo.Order, action.AttributeRouteInfo);
                     _endpoints.Add(endpoint);
                 }
             }
@@ -235,7 +235,7 @@ namespace Microsoft.AspNetCore.Mvc.Internal
             }
         }
 
-        private MatcherEndpoint CreateEndpoint(ActionDescriptor action, string template, int order, object source)
+        private MatcherEndpoint CreateEndpoint(ActionDescriptor action, string routeName, string template, int order, object source)
         {
             RequestDelegate invokerDelegate = (context) =>
             {
@@ -259,6 +259,7 @@ namespace Microsoft.AspNetCore.Mvc.Internal
             // REVIEW: Used for debugging. Consider removing before release
             metadata.Add(source);
             metadata.Add(action);
+            metadata.Add(new RequiredLinkValuesMetadata(new RouteValueDictionary(action.RouteValues)));
 
             // Add filter descriptors to endpoint metadata
             if (action.FilterDescriptors != null && action.FilterDescriptors.Count > 0)
@@ -284,8 +285,7 @@ namespace Microsoft.AspNetCore.Mvc.Internal
                 action.RouteValues,
                 order,
                 metadataCollection,
-                action.DisplayName,
-                address: null);
+                action.DisplayName);
             return endpoint;
         }
 

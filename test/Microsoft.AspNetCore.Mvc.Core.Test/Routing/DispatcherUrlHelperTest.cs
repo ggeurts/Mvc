@@ -39,9 +39,7 @@ namespace Microsoft.AspNetCore.Mvc.Routing
                 null,
                 0,
                 EndpointMetadataCollection.Empty,
-                null,
-                new Address(routeName)
-                ));
+                null));
             return CreateUrlHelper(endpoints, appRoot, host, protocol);
         }
 
@@ -56,7 +54,6 @@ namespace Microsoft.AspNetCore.Mvc.Routing
                     new { },
                     0,
                     EndpointMetadataCollection.Empty,
-                    null,
                     null)
             });
 
@@ -107,16 +104,14 @@ namespace Microsoft.AspNetCore.Mvc.Routing
                 new { id = "defaultid" },
                 0,
                 EndpointMetadataCollection.Empty,
-                "RouteWithNoName",
-                address: null));
+                "RouteWithNoName"));
             endpoints.Add(new MatcherEndpoint(
                 next => (httpContext) => Task.CompletedTask,
                 "named/{controller}/{action}/{id}",
                 new { id = "defaultid" },
                 0,
-                EndpointMetadataCollection.Empty,
-                "RouteWithNoName",
-                new Address("namedroute")));
+                new EndpointMetadataCollection(new[] { new EndpointWithNameMetadata("namedroute") }),
+                "RouteWithNoName"));
             return endpoints;
         }
 
@@ -143,8 +138,16 @@ namespace Microsoft.AspNetCore.Mvc.Routing
                 defaults,
                 0,
                 EndpointMetadataCollection.Empty,
-                null,
-                new Address(name));
+                null);
+        }
+
+        private class EndpointWithNameMetadata : INameMetadata
+        {
+            public EndpointWithNameMetadata(string name)
+            {
+                Name = name;
+            }
+            public string Name { get; }
         }
     }
 }
