@@ -12,9 +12,9 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
         private const string StatusCodeProperty = "StatusCode";
         private const string StatusCodeConstructorParameter = "statusCode";
 
-        internal static IList<ApiResponseMetadata> GetResponseMetadata(ApiControllerTypeCache typeCache, IMethodSymbol methodSymbol)
+        internal static IList<ApiResponseMetadata> GetResponseMetadata(ApiControllerSymbolCache symbolCache, IMethodSymbol methodSymbol)
         {
-            var responseMetadataAttributes = methodSymbol.GetAttributes(typeCache.ProducesResponseTypeAttribute, inherit: true);
+            var responseMetadataAttributes = methodSymbol.GetAttributes(symbolCache.ProducesResponseTypeAttribute, inherit: true);
             var metadataItems = new List<ApiResponseMetadata>();
             foreach (var attribute in responseMetadataAttributes)
             {
