@@ -11,13 +11,7 @@ namespace Microsoft.AspNetCore.Mvc.Internal
     {
         public static string ToString(IEnumerable<TemplateSegment> routeSegments)
         {
-            var newTemplate = string.Join("/", routeSegments.Select(s => ToString(s)));
-            if (string.IsNullOrEmpty(newTemplate))
-            {
-                return "/";
-            }
-
-            return newTemplate;
+            return string.Join("/", routeSegments.Select(s => ToString(s)));
         }
 
         private static string ToString(TemplateSegment templateSegment)
